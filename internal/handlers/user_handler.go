@@ -13,7 +13,6 @@ import (
 	"github.com/yourusername/go-rest-api-template/internal/services"
 )
 
-// UserHandler handles HTTP requests for users
 type UserHandler struct {
 	service  *services.UserService
 	validate *validator.Validate
@@ -46,7 +45,6 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate user input
 	if err := h.validate.Struct(user); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 		w.WriteHeader(http.StatusBadRequest)
@@ -54,7 +52,6 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Register user
 	token, err := h.service.Register(r.Context(), &user)
 	if err != nil {
 		if err.Error() == "username or email already exists" {
@@ -90,7 +87,6 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate user input
 	if err := h.validate.Struct(login); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 		w.WriteHeader(http.StatusBadRequest)
@@ -98,7 +94,6 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Login user
 	token, err := h.service.Login(r.Context(), &login)
 	if err != nil {
 		if err.Error() == "invalid username or password" {
@@ -128,7 +123,6 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /users/{id} [get]
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
-	// Get user ID from URL
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -136,7 +130,6 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user
 	user, err := h.service.GetByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -166,7 +159,6 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /users/{id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	// Get user ID from URL
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -174,14 +166,12 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decode request body
 	var user models.UserUpdate
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Validate user input
 	if err := h.validate.Struct(user); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 		w.WriteHeader(http.StatusBadRequest)
@@ -189,7 +179,6 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update user
 	updatedUser, err := h.service.Update(r.Context(), id, &user)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -221,7 +210,6 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	// Get user ID from URL
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -229,7 +217,6 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Delete user
 	err = h.service.Delete(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -256,7 +243,6 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	// Get pagination parameters
 	pageStr := r.URL.Query().Get("page")
 	pageSizeStr := r.URL.Query().Get("page_size")
 
@@ -277,19 +263,16 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Get users
 	users, count, err := h.service.List(r.Context(), page, pageSize)
 	if err != nil {
 		http.Error(w, "Failed to list users", http.StatusInternalServerError)
 		return
 	}
 
-	// Calculate pagination info
 	totalPages := (count + pageSize - 1) / pageSize
 	hasNext := page < totalPages
 	hasPrev := page > 1
 
-	// Create response
 	response := map[string]interface{}{
 		"users":       users,
 		"total":       count,
@@ -305,13 +288,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 // RegisterHandlers registers user handlers on the given router
 func (h *UserHandler) RegisterHandlers(r chi.Router) {
-	// Auth routes (no authentication required)
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", h.Register)
 		r.Post("/login", h.Login)
 	})
 
-	// User routes (authentication required)
 	r.Route("/users", func(r chi.Router) {
 		r.Get("/", h.ListUsers)
 		r.Get("/{id}", h.GetUser)
