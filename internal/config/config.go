@@ -35,6 +35,7 @@ type JWTConfig struct {
 	ExpirationTTL time.Duration
 }
 
+// TODO replace config with github.com/spf13/viper
 func Load() (*Config, error) {
 	_ = godotenv.Load()
 
