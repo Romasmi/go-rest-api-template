@@ -1,0 +1,16 @@
+server:
+  port: "8080"
+  read_timeout: "15s"
+  write_timeout: "15s"
+  idle_timeout: "60s"
+
+database:
+  url: postgres://postgres:postgres@localhost:5432/go_rest_api?sslmode=disable
+  max_connections: 10
+  min_connections: 2
+  max_conn_lifetime: "1h"
+  max_conn_idle_time: "30m"
+
+jwt:
+  secret: your-secret-key-change-in-production
+  expiration_ttl: "24h"

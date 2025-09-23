@@ -2,123 +2,102 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"strconv"
+	"reflect"
+	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
+	Server   ServerConfig   `mapstructure:"server"`
+	Database DatabaseConfig `mapstructure:"database"`
+	JWT      JWTConfig      `mapstructure:"jwt"`
 }
 
 type ServerConfig struct {
-	Port         string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	Port         string        `mapstructure:"port"`
+	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+	IdleTimeout  time.Duration `mapstructure:"idle_timeout"`
 }
 
 type DatabaseConfig struct {
-	URL             string
-	MaxConnections  int
-	MinConnections  int
-	MaxConnLifetime time.Duration
-	MaxConnIdleTime time.Duration
+	URL             string        `mapstructure:"url"`
+	MaxConnections  int           `mapstructure:"max_connections"`
+	MinConnections  int           `mapstructure:"min_connections"`
+	MaxConnLifetime time.Duration `mapstructure:"max_conn_lifetime"`
+	MaxConnIdleTime time.Duration `mapstructure:"max_conn_idle_time"`
 }
 
 type JWTConfig struct {
-	Secret        string
-	ExpirationTTL time.Duration
+	Secret        string        `mapstructure:"secret"`
+	ExpirationTTL time.Duration `mapstructure:"expiration_ttl"`
 }
 
-func Load() (*Config, error) {
-	_ = godotenv.Load()
+func bindEnvRecursive(v *viper.Viper, prefix string, val reflect.Value) error {
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Type().Field(i)
+		tag := field.Tag.Get("mapstructure")
+		if tag == "" {
+			continue
+		}
 
-	port := getEnv("PORT", "8080")
-	readTimeout := getEnvAsDuration("SERVER_READ_TIMEOUT", 15*time.Second)
-	writeTimeout := getEnvAsDuration("SERVER_WRITE_TIMEOUT", 15*time.Second)
-	idleTimeout := getEnvAsDuration("SERVER_IDLE_TIMEOUT", 60*time.Second)
+		fieldPath := prefix
+		if prefix != "" {
+			fieldPath = prefix + "." + tag
+		} else {
+			fieldPath = tag
+		}
 
-	dbURL := getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/go_rest_api?sslmode=disable")
-	maxConnections := getEnvAsInt("DATABASE_MAX_CONNECTIONS", 10)
-	minConnections := getEnvAsInt("DATABASE_MIN_CONNECTIONS", 2)
-	maxConnLifetime := getEnvAsDuration("DATABASE_MAX_CONN_LIFETIME", time.Hour)
-	maxConnIdleTime := getEnvAsDuration("DATABASE_MAX_CONN_IDLE_TIME", 30*time.Minute)
+		if field.Type.Kind() == reflect.Struct {
+			if err := bindEnvRecursive(v, fieldPath, val.Field(i)); err != nil {
+				return err
+			}
+			continue
+		}
 
-	jwtSecret := getEnv("JWT_SECRET", "your-secret-key-change-in-production")
-	jwtExpirationTTL := getEnvAsDuration("JWT_EXPIRATION_TTL", 24*time.Hour)
-
-	config := &Config{
-		Server: ServerConfig{
-			Port:         port,
-			ReadTimeout:  readTimeout,
-			WriteTimeout: writeTimeout,
-			IdleTimeout:  idleTimeout,
-		},
-		Database: DatabaseConfig{
-			URL:             dbURL,
-			MaxConnections:  maxConnections,
-			MinConnections:  minConnections,
-			MaxConnLifetime: maxConnLifetime,
-			MaxConnIdleTime: maxConnIdleTime,
-		},
-		JWT: JWTConfig{
-			Secret:        jwtSecret,
-			ExpirationTTL: jwtExpirationTTL,
-		},
+		envVar := strings.ToUpper(strings.ReplaceAll(fieldPath, ".", "_"))
+		if err := v.BindEnv(fieldPath, envVar); err != nil {
+			return err
+		}
 	}
-
-	return config, nil
-}
-
-func (c *Config) Validate() error {
-	if c.Server.Port == "" {
-		return fmt.Errorf("server port is required")
-	}
-
-	if c.Database.URL == "" {
-		return fmt.Errorf("database URL is required")
-	}
-
-	if c.JWT.Secret == "" {
-		return fmt.Errorf("JWT secret is required")
-	}
-
 	return nil
 }
 
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
+func bindAllEnvVars(v *viper.Viper) error {
+	return bindEnvRecursive(v, "", reflect.ValueOf(&Config{}).Elem())
 }
 
-func getEnvAsInt(key string, defaultValue int) int {
-	valueStr := getEnv(key, "")
-	if valueStr == "" {
-		return defaultValue
-	}
-	value, err := strconv.Atoi(valueStr)
-	if err != nil {
-		return defaultValue
-	}
-	return value
-}
+func Load() (*Config, error) {
 
-func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
-	valueStr := getEnv(key, "")
-	if valueStr == "" {
-		return defaultValue
+	v := viper.New()
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+	v.AddConfigPath(".")
+
+	if err := v.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("read config.yaml: %w", err)
 	}
-	value, err := time.ParseDuration(valueStr)
-	if err != nil {
-		return defaultValue
+
+	v2 := viper.New()
+	v2.SetConfigName("override")
+	v2.SetConfigType("yaml")
+	v2.AddConfigPath(".")
+	if err := v2.ReadInConfig(); err == nil { // optional
+		if err := v.MergeConfigMap(v2.AllSettings()); err != nil {
+			return nil, fmt.Errorf("merge override.yaml: %w", err)
+		}
 	}
-	return value
+
+	if err := bindAllEnvVars(v); err != nil {
+		return nil, fmt.Errorf("bind env: %w", err)
+	}
+
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("unmarshal config: %w", err)
+	}
+
+	return &cfg, nil
 }
