@@ -26,7 +26,6 @@ A comprehensive template for building RESTful APIs in Go. This template includes
 ├── cmd/
 │   └── api/             # Application entry points
 │       └── main.go      # Main application
-├── config/              # Configuration files
 ├── docs/                # Documentation
 ├── internal/            # Private application code
 │   ├── config/          # Configuration package
@@ -77,7 +76,8 @@ go mod download
 cp .env.example .env
 ```
 
-4. Update the `.env` file with your configuration.
+4. Update the `overried.ini` file with your configuration or specify environment variables. 
+For example database -> host in yaml is DATABASE_HOST in env.  :.
 
 ### Running the API
 
