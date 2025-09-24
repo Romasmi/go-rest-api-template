@@ -43,16 +43,17 @@ func main() {
 
 	authMiddleware.InitAuth()
 
-	if err := database.Connect(); err != nil {
+	dbConnection := &database.DbConnection{}
+	if err := dbConnection.Connect(); err != nil {
 		logger.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer database.Close()
+	defer dbConnection.Close()
 
 	if err := database.RunMigrations("up"); err != nil {
 		logger.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	userRepo := repository.NewUserRepository(database.DB)
+	userRepo := repository.NewUserRepository(dbConnection.DB)
 
 	userService := services.NewUserService(userRepo)
 
