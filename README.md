@@ -54,7 +54,7 @@ A comprehensive template for building RESTful APIs in Go. This template includes
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/go-rest-api-template.git
+git clone https://github.com/Romasmi/go-rest-api-template.git
 cd go-rest-api-template
 ```
 
