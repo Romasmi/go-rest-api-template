@@ -64,14 +64,11 @@ cd go-rest-api-template
 go mod download
 ```
 
-3. Create a `.env` file:
+3. Create a `override.yaml` file (default values are in config.yaml) or set ENV variables:
 
 ```bash
-cp .env.example .env
+cp config.yaml override.yaml
 ```
-
-4. Update the `overried.ini` file with your configuration or specify environment variables. 
-For example database -> host in yaml is DATABASE_HOST in env.  :.
 
 ### Running the API
 
