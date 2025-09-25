@@ -39,12 +39,6 @@ A comprehensive template for building RESTful APIs in Go. This template includes
 ├── pkg/                 # Public packages
 │   ├── logger/          # Logging package
 │   └── validator/       # Validation package
-├── tmp/                 # Temporary files
-├── .env.example         # Example environment variables
-├── .gitignore           # Git ignore file
-├── go.mod               # Go module file
-├── go.sum               # Go module checksum file
-└── README.md            # This file
 ```
 
 ## Getting Started
