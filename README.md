@@ -133,8 +133,8 @@ The application can be configured using environment variables. See the `.env.exa
 
 ```bash
 # Create a migration to add a new table
-echo "CREATE TABLE IF NOT EXISTS items (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL);" > migrations/000002_create_items_table.up.sql
-echo "DROP TABLE IF EXISTS items;" > migrations/000002_create_items_table.down.sql
+touch migrations/000002_create_items_table.up.sql
+touch migrations/000002_create_items_table.down.sql
 ```
 
 2. Run the migration:
@@ -142,7 +142,3 @@ echo "DROP TABLE IF EXISTS items;" > migrations/000002_create_items_table.down.s
 ```bash
 go run cmd/api/main.go migrate
 ```
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
