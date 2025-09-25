@@ -7,32 +7,33 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/yourusername/go-rest-api-template/internal/utils"
 )
 
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
+	Server   ServerConfig `mapstructure:"server"` // mapping in annotation is optional and by default is use property name as it is
+	Database DatabaseConfig
+	JWT      JWTConfig
 }
 
 type ServerConfig struct {
-	Port         string        `mapstructure:"port"`
-	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
-	WriteTimeout time.Duration `mapstructure:"write_timeout"`
-	IdleTimeout  time.Duration `mapstructure:"idle_timeout"`
+	Port         string
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
 }
 
 type DatabaseConfig struct {
-	URL             string        `mapstructure:"url"`
-	MaxConnections  int           `mapstructure:"max_connections"`
-	MinConnections  int           `mapstructure:"min_connections"`
-	MaxConnLifetime time.Duration `mapstructure:"max_conn_lifetime"`
-	MaxConnIdleTime time.Duration `mapstructure:"max_conn_idle_time"`
+	URL             string
+	MaxConnections  int
+	MinConnections  int
+	MaxConnLifetime time.Duration
+	MaxConnIdleTime time.Duration
 }
 
 type JWTConfig struct {
-	Secret        string        `mapstructure:"secret"`
-	ExpirationTTL time.Duration `mapstructure:"expiration_ttl"`
+	Secret        string
+	ExpirationTTL time.Duration
 }
 
 func bindEnvRecursive(v *viper.Viper, prefix string, val reflect.Value) error {
@@ -40,7 +41,7 @@ func bindEnvRecursive(v *viper.Viper, prefix string, val reflect.Value) error {
 		field := val.Type().Field(i)
 		tag := field.Tag.Get("mapstructure")
 		if tag == "" {
-			continue
+			tag = utils.FirstChatToLowerCase(field.Name)
 		}
 
 		fieldPath := prefix
