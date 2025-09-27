@@ -16,11 +16,11 @@ import (
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
-	"github.com/yourusername/go-rest-api-template/internal/database"
-	"github.com/yourusername/go-rest-api-template/internal/handlers"
-	authMiddleware "github.com/yourusername/go-rest-api-template/internal/middleware"
-	"github.com/yourusername/go-rest-api-template/internal/repository"
-	"github.com/yourusername/go-rest-api-template/internal/services"
+	"github.com/Romasmi/go-rest-api-template/internal/database"
+	"github.com/Romasmi/go-rest-api-template/internal/handlers"
+	authMiddleware "github.com/Romasmi/go-rest-api-template/internal/middleware"
+	"github.com/Romasmi/go-rest-api-template/internal/repository"
+	"github.com/Romasmi/go-rest-api-template/internal/services"
 )
 
 // @title Go REST API Template
