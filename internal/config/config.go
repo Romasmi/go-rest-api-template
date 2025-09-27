@@ -1,13 +1,12 @@
 package config
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/Romasmi/go-rest-api-template/internal/utils"
 	"github.com/spf13/viper"
-	"github.com/yourusername/go-rest-api-template/internal/utils"
 )
 
 type Config struct {
@@ -17,7 +16,7 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port         string
+	Port         uint
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	IdleTimeout  time.Duration
@@ -25,8 +24,8 @@ type ServerConfig struct {
 
 type DatabaseConfig struct {
 	URL             string
-	MaxConnections  int
-	MinConnections  int
+	MaxConnections  uint
+	MinConnections  uint
 	MaxConnLifetime time.Duration
 	MaxConnIdleTime time.Duration
 }
@@ -70,35 +69,34 @@ func bindAllEnvVars(v *viper.Viper) error {
 	return bindEnvRecursive(v, "", reflect.ValueOf(&Config{}).Elem())
 }
 
-func Load() (*Config, error) {
-
+func LoadConfig(configPath string) (*Config, error) {
 	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
-	v.AddConfigPath(".")
+	v.AddConfigPath(configPath)
 
 	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("read config.yaml: %w", err)
+		return nil, err
 	}
 
 	v2 := viper.New()
 	v2.SetConfigName("override")
 	v2.SetConfigType("yaml")
-	v2.AddConfigPath(".")
-	if err := v2.ReadInConfig(); err == nil { // optional
-		if err := v.MergeConfigMap(v2.AllSettings()); err != nil {
-			return nil, fmt.Errorf("merge override.yaml: %w", err)
+	v2.AddConfigPath(configPath)
+	if err := v2.ReadInConfig(); err == nil {
+		err := v.MergeConfigMap(v2.AllSettings())
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	if err := bindAllEnvVars(v); err != nil {
-		return nil, fmt.Errorf("bind env: %w", err)
+		return nil, err
 	}
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("unmarshal config: %w", err)
+		return nil, err
 	}
-
 	return &cfg, nil
 }

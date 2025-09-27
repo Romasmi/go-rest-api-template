@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Romasmi/go-rest-api-template/internal/models"
+	"github.com/Romasmi/go-rest-api-template/internal/repository"
+	"github.com/Romasmi/go-rest-api-template/internal/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
-	"github.com/yourusername/go-rest-api-template/internal/models"
-	"github.com/yourusername/go-rest-api-template/internal/repository"
-	"github.com/yourusername/go-rest-api-template/internal/services"
 )
 
 type UserHandler struct {
