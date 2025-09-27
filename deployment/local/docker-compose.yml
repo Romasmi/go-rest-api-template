@@ -1,0 +1,35 @@
+services:
+  traefik:
+    image: "traefik:v3.4"
+    container_name: "url-shortener-traefik"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - url-shortener
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.yml:/etc/traefik/traefik.yml:ro"
+  db:
+    image: "postgres:16-alpine"
+    container_name: "url-shortener-db"
+    restart: unless-stopped
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - url-shortener
+    env_file:
+      - ./.env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.db.rule=Host(`db.docker.localhost`)"
+      - "traefik.http.routers.db.entrypoints=db"
+    ports:
+      - 5432:5432
+volumes:
+  db:
+networks:
+  url-shortener:
