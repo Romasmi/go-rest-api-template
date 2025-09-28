@@ -23,11 +23,11 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	URL             string
-	MaxConnections  uint
-	MinConnections  uint
-	MaxConnLifetime time.Duration
-	MaxConnIdleTime time.Duration
+	URL                   string
+	MaxConnections        uint
+	MinConnections        uint
+	MaxConnectionLifetime uint
+	MaxConnectionIdleTime uint
 }
 
 type JWTConfig struct {

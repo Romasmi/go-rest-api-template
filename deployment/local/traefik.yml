@@ -1,0 +1,13 @@
+entryPoints:
+  web:
+    address: ":80"
+  db:
+    address: ":5432"
+api:
+  dashboard: true
+  insecure: true
+providers:
+  docker:
+    network: go-rest-api
+    exposedByDefault: false
+

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Romasmi/go-rest-api-template/internal/models"
+	"github.com/Romasmi/go-rest-api-template/internal/utils"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -26,7 +27,7 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 }
 
 func (r *UserRepository) Create(ctx context.Context, user *models.UserCreate) (*models.User, error) {
-	passwordHash, err := models.HashPassword(user.Password)
+	passwordHash, err := utils.HashPassword(user.Password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
@@ -171,7 +172,7 @@ func (r *UserRepository) Update(ctx context.Context, id int, user *models.UserUp
 		currentUser.Email = user.Email
 	}
 	if user.Password != "" {
-		passwordHash, err := models.HashPassword(user.Password)
+		passwordHash, err := utils.HashPassword(user.Password)
 		if err != nil {
 			return nil, fmt.Errorf("failed to hash password: %w", err)
 		}

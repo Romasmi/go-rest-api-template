@@ -5,7 +5,7 @@ server:
   idleTimeout: "60s"
 
 database:
-  url: postgres://postgres:postgres@localhost:5432/go_rest_api?sslmode=disable
+  url: postgres://user:password@db.docker.localhost:5432/go_rest_api?sslmode=disable
   maxConnections: 10
   minConnections: 2
   maxConnLifetime: "1h"
