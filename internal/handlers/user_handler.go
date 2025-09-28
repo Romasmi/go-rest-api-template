@@ -18,7 +18,6 @@ type UserHandler struct {
 	validate *validator.Validate
 }
 
-// NewUserHandler creates a new UserHandler
 func NewUserHandler(service *services.UserService) *UserHandler {
 	return &UserHandler{
 		service:  service,
@@ -287,15 +286,4 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(response)
-}
-
-// RegisterHandlers registers user handlers on the given router
-func (h *UserHandler) RegisterHandlers(r *mux.Router) {
-	r.HandleFunc("/auth/register", h.Register).Methods("POST")
-	r.HandleFunc("/auth/login", h.Login).Methods("POST")
-
-	r.HandleFunc("/users", h.ListUsers).Methods("GET")
-	r.HandleFunc("/users/{id}", h.GetUser).Methods("GET")
-	r.HandleFunc("/users/{id}", h.UpdateUser).Methods("PUT")
-	r.HandleFunc("/users/{id}", h.DeleteUser).Methods("DELETE")
 }
