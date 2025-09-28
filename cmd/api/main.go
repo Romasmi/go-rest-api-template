@@ -10,10 +10,8 @@ import (
 	"time"
 
 	"github.com/Romasmi/go-rest-api-template/internal/config"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-	"github.com/go-chi/jwtauth/v5"
+	ghandlers "github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
@@ -99,48 +97,50 @@ func main() {
 }
 
 func setupRouter(logger *log.Logger, userHandler *handlers.UserHandler) http.Handler {
-	r := chi.NewRouter()
+	r := mux.NewRouter()
 
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
+	// Middlewares
+	r.Use(ghandlers.RecoveryHandler())
+	r.Use(ghandlers.ProxyHeaders)
+	r.Use(ghandlers.CORS(
+		ghandlers.AllowedOrigins([]string{"*"}),
+		ghandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		ghandlers.AllowedHeaders([]string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"}),
+		ghandlers.ExposedHeaders([]string{"Link"}),
+		ghandlers.AllowCredentials(),
+		ghandlers.MaxAge(300),
+	))
 
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
-
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	// Public routes
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Welcome to the Go REST API Template!"))
-	})
+	}).Methods("GET")
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
-	})
+	}).Methods("GET")
 
-	r.Get("/swagger/*", httpSwagger.Handler(
+	// Swagger
+	r.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
 
-	r.Route("/api/v1", func(r chi.Router) {
-		userHandler.RegisterHandlers(r)
+	// API v1
+	api := r.PathPrefix("/api/v1").Subrouter()
+	userHandler.RegisterHandlers(api)
 
-		r.Group(func(r chi.Router) {
-			r.Use(jwtauth.Verifier(authMiddleware.TokenAuth))
-			r.Use(jwtauth.Authenticator)
+	// Protected subrouter
+	protected := api.PathPrefix("").Subrouter()
+	protected.Use(authMiddleware.Authenticator)
+	protected.HandleFunc("/protected", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("This is a protected endpoint"))
+	}).Methods("GET")
 
-			r.Get("/protected", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("This is a protected endpoint"))
-			})
-		})
-	})
+	// Wrap with logging and timeout
+	var handler http.Handler = r
+	handler = ghandlers.CombinedLoggingHandler(os.Stdout, handler)
+	handler = http.TimeoutHandler(handler, 60*time.Second, "Request timed out")
 
-	return r
+	return handler
 }

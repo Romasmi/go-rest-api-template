@@ -9,8 +9,8 @@ import (
 	"github.com/Romasmi/go-rest-api-template/internal/models"
 	"github.com/Romasmi/go-rest-api-template/internal/repository"
 	"github.com/Romasmi/go-rest-api-template/internal/services"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 )
 
 type UserHandler struct {
@@ -123,7 +123,8 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /users/{id} [get]
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
+	vars := mux.Vars(r)
+	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
@@ -159,7 +160,8 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /users/{id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
+	vars := mux.Vars(r)
+	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
@@ -210,7 +212,8 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
+	vars := mux.Vars(r)
+	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
@@ -287,16 +290,12 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 // RegisterHandlers registers user handlers on the given router
-func (h *UserHandler) RegisterHandlers(r chi.Router) {
-	r.Route("/auth", func(r chi.Router) {
-		r.Post("/register", h.Register)
-		r.Post("/login", h.Login)
-	})
+func (h *UserHandler) RegisterHandlers(r *mux.Router) {
+	r.HandleFunc("/auth/register", h.Register).Methods("POST")
+	r.HandleFunc("/auth/login", h.Login).Methods("POST")
 
-	r.Route("/users", func(r chi.Router) {
-		r.Get("/", h.ListUsers)
-		r.Get("/{id}", h.GetUser)
-		r.Put("/{id}", h.UpdateUser)
-		r.Delete("/{id}", h.DeleteUser)
-	})
+	r.HandleFunc("/users", h.ListUsers).Methods("GET")
+	r.HandleFunc("/users/{id}", h.GetUser).Methods("GET")
+	r.HandleFunc("/users/{id}", h.UpdateUser).Methods("PUT")
+	r.HandleFunc("/users/{id}", h.DeleteUser).Methods("DELETE")
 }
