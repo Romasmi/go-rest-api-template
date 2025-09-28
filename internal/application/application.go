@@ -13,9 +13,10 @@ import (
 
 	"github.com/Romasmi/go-rest-api-template/internal/config"
 	"github.com/Romasmi/go-rest-api-template/internal/database"
+	authMiddleware "github.com/Romasmi/go-rest-api-template/internal/middleware"
 	"github.com/Romasmi/go-rest-api-template/internal/routes"
+	ghandlers "github.com/gorilla/handlers"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -42,7 +43,14 @@ func (app *App) InitApp(configPath string) error {
 	app.router = mux.NewRouter()
 	routes.RegisterRoutes(app.router, app.dbConn.DB, app.config)
 
+	authMiddleware.InitAuth(envConfig)
+
 	app.logger = log.New(os.Stdout, "API: ", log.LstdFlags)
+
+	if err := database.RunMigrations("up"); err != nil {
+		app.logger.Fatalf("Failed to run migrations: %v", err)
+	}
+
 	return nil
 }
 
@@ -51,23 +59,13 @@ func (app *App) OnStop() {
 }
 
 func (app *App) Run() {
-	credentials := handlers.AllowCredentials()
-	methods := handlers.AllowedMethods([]string{
-		http.MethodGet,
-		http.MethodPost,
-		http.MethodPut,
-		http.MethodDelete,
-		http.MethodOptions,
-	})
-	headers := handlers.AllowedHeaders([]string{
-		"Content-Type",
-		"Authorization",
-	})
-	origins := handlers.AllowedOrigins([]string{"*"})
+	var handler http.Handler = app.router
+	handler = ghandlers.CombinedLoggingHandler(os.Stdout, handler)
+	handler = http.TimeoutHandler(handler, 60*time.Second, "Request timed out")
 
 	server := &http.Server{
 		Addr:         ":" + strconv.Itoa(int(app.config.Server.Port)),
-		Handler:      handlers.CORS(credentials, methods, origins, headers)(app.router),
+		Handler:      handler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,

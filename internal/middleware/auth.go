@@ -2,22 +2,17 @@ package middleware
 
 import (
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/Romasmi/go-rest-api-template/internal/config"
 	"github.com/go-chi/jwtauth/v5"
 )
 
 var TokenAuth *jwtauth.JWTAuth
 
-func InitAuth() {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "your-secret-key-change-in-production"
-	}
-
-	TokenAuth = jwtauth.New("HS256", []byte(secret), nil)
+func InitAuth(config *config.Config) {
+	TokenAuth = jwtauth.New("HS256", []byte(config.JWT.Secret), nil)
 }
 
 func Authenticator(next http.Handler) http.Handler {
