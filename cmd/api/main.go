@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Romasmi/go-rest-api-template/internal/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -43,8 +44,13 @@ func main() {
 
 	authMiddleware.InitAuth()
 
+	envConfig, err := config.LoadConfig(".")
+	if err != nil {
+		logger.Fatalf("error while loading config %v", err)
+	}
+
 	dbConnection := &database.DbConnection{}
-	if err := dbConnection.Connect(); err != nil {
+	if err := dbConnection.Connect(envConfig); err != nil {
 		logger.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer dbConnection.Close()

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
+	"github.com/Romasmi/go-rest-api-template/internal/config"
+	"github.com/Romasmi/go-rest-api-template/internal/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -14,26 +15,20 @@ type DbConnection struct {
 	DB *pgxpool.Pool
 }
 
-func (c *DbConnection) Connect() error {
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		dbURL = "postgres://postgres:postgres@localhost:5432/go_rest_api?sslmode=disable"
-	}
-
-	config, err := pgxpool.ParseConfig(dbURL)
+func (c *DbConnection) Connect(config *config.Config) error {
+	pgConfig, err := pgxpool.ParseConfig(config.Database.URL)
 	if err != nil {
 		return fmt.Errorf("unable to parse database URL: %w", err)
 	}
-
-	config.MaxConns = 10
-	config.MinConns = 2
-	config.MaxConnLifetime = time.Hour
-	config.MaxConnIdleTime = 30 * time.Minute
+	pgConfig.MaxConns = int32(config.Database.MaxConnections)
+	pgConfig.MinConns = int32(config.Database.MinConnections)
+	pgConfig.MaxConnLifetime = utils.MinutesToNanoseconds(config.Database.MaxConnectionLifetime)
+	pgConfig.MaxConnIdleTime = utils.MinutesToNanoseconds(config.Database.MaxConnectionIdleTime)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	c.DB, err = pgxpool.NewWithConfig(ctx, config)
+	c.DB, err = pgxpool.NewWithConfig(ctx, pgConfig)
 	if err != nil {
 		return fmt.Errorf("unable to connect to database: %w", err)
 	}
@@ -42,14 +37,13 @@ func (c *DbConnection) Connect() error {
 		return fmt.Errorf("unable to ping database: %w", err)
 	}
 
-	log.Println("Connected to database")
 	return nil
 }
 
 func (c *DbConnection) Close() {
 	if c.DB != nil {
 		c.DB.Close()
-		log.Println("Database connection closed")
+		log.Println("database connection closed")
 	}
 }
 

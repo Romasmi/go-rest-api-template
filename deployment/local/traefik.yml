@@ -8,6 +8,6 @@ api:
   insecure: true
 providers:
   docker:
-    network: url-shortener
+    network: go-rest-api
     exposedByDefault: false
 
