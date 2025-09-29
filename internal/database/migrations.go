@@ -11,17 +11,18 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func RunMigrations(direction string) error {
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		dbURL = "postgres://postgres:postgres@localhost:5432/go_rest_api?sslmode=disable"
-	}
+func (db *DbConnection) RunMigrations(direction string) error {
 
-	m, err := migrate.New("file://migrations", dbURL)
+	m, err := migrate.New("file://migrations", db.Config.Database.URL)
 	if err != nil {
 		return fmt.Errorf("failed to create migration instance: %w", err)
 	}
-	defer m.Close()
+	defer func(m *migrate.Migrate) {
+		err, _ := m.Close()
+		if err != nil {
+			fmt.Printf("error while closing DB connection: %v", err)
+		}
+	}(m)
 
 	if direction == "up" {
 		if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {

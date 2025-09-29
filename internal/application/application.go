@@ -47,7 +47,7 @@ func (app *App) InitApp(configPath string) error {
 
 	app.logger = log.New(os.Stdout, "API: ", log.LstdFlags)
 
-	if err := database.RunMigrations("up"); err != nil {
+	if err := dbConn.RunMigrations("up"); err != nil {
 		app.logger.Fatalf("Failed to run migrations: %v", err)
 	}
 
